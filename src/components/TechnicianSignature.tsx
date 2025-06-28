@@ -17,6 +17,61 @@ const TechnicianSignature = ({ technician, existingSignature, onSignatureSave }:
   const [hasSignature, setHasSignature] = useState(false);
 
   useEffect(() => {
+  if (!canvasRef.current) return;
+
+  const canvas = canvasRef.current;
+
+  const preventScroll = (e: TouchEvent) => e.preventDefault();
+  canvas.addEventListener('touchstart', preventScroll, { passive: false });
+  canvas.addEventListener('touchmove', preventScroll, { passive: false });
+
+  const ratio = Math.max(window.devicePixelRatio || 1, 1);
+
+  const resizeCanvas = () => {
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * ratio;
+    canvas.height = rect.height * ratio;
+    const context = canvas.getContext('2d');
+    if (context) {
+      context.scale(ratio, ratio);
+    }
+
+    // Redibujar la firma después del resize
+    if (existingSignature && signaturePadRef.current) {
+      signaturePadRef.current.clear();
+      signaturePadRef.current.fromDataURL(existingSignature);
+      setHasSignature(true);
+    }
+  };
+
+  resizeCanvas();
+  window.addEventListener('resize', resizeCanvas);
+
+  // Inicializar signature pad
+  signaturePadRef.current = new SignaturePad(canvas, {
+    backgroundColor: 'rgb(255, 255, 255)',
+    penColor: 'rgb(0, 0, 0)',
+    minWidth: 1,
+    maxWidth: 3,
+  });
+
+  if (existingSignature) {
+    signaturePadRef.current.fromDataURL(existingSignature);
+    setHasSignature(true);
+  }
+
+  signaturePadRef.current.addEventListener('beginStroke', () => {
+    setHasSignature(true);
+  });
+
+  return () => {
+    window.removeEventListener('resize', resizeCanvas);
+    canvas.removeEventListener('touchstart', preventScroll);
+    canvas.removeEventListener('touchmove', preventScroll);
+  };
+}, [existingSignature]);
+
+  /*useEffect(() => {
     if (canvasRef.current) {
       // Prevent scrolling on mobile when signing
       const preventScroll = (e: TouchEvent) => {
@@ -69,7 +124,7 @@ const TechnicianSignature = ({ technician, existingSignature, onSignatureSave }:
         window.removeEventListener('resize', resizeCanvas);
       };
     }
-  }, [existingSignature]);
+  }, [existingSignature]);*/
 
   const clearSignature = () => {
     if (signaturePadRef.current) {

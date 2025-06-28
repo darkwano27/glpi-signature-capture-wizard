@@ -32,19 +32,33 @@ const TechnicianSignatureWizard = ({ onLogout }: TechnicianSignatureWizardProps)
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const { toast } = useToast();
 
-  useEffect(() => {
-    loadTechnicians();
-  }, []);
+useEffect(() => {
+  const token = localStorage.getItem('auth_token');
 
-  const loadTechnicians = async () => {
+  const fetchTechnicians = async () => {
     try {
-      const response = await fetch('/api/technicians');
+      const response = await fetch('http://localhost:3001/api/technicians', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        console.error('Error al obtener técnicos:', response.status);
+        return;
+      }
+
       const data = await response.json();
       setTechnicians(data);
     } catch (error) {
-      console.error('Error loading technicians:', error);
+      console.error('Error de red al obtener técnicos:', error);
     }
   };
+
+  fetchTechnicians();
+}, []);
 
   const handleTechnicianSelect = (technicianId: string) => {
     const technician = technicians.find(t => t.id === parseInt(technicianId));
@@ -91,38 +105,39 @@ const TechnicianSignatureWizard = ({ onLogout }: TechnicianSignatureWizardProps)
     setIsGeneratingPDF(true);
 
     try {
-      const response = await fetch('/api/generate-pdf', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          technician: selectedTechnician,
-          user: selectedUser,
-          assets: selectedAssets,
-          technicianSignature,
-          userSignature,
-        }),
-      });
+     const token = localStorage.getItem('auth_token');
 
-      if (response.ok) {
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.style.display = 'none';
-        a.href = url;
-        a.download = `entrega_activos_${selectedUser.name}_${new Date().toISOString().split('T')[0]}.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
+const response = await fetch('http://localhost:3001/api/generate-pdf', {
+  method: 'POST',
+  mode: 'cors',
+  headers: {
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    technician: selectedTechnician,
+    user: selectedUser,
+    assets: selectedAssets,
+    technicianSignature,
+    userSignature,
+  }),
+});
 
-        toast({
-          title: "PDF generado",
-          description: "El PDF ha sido generado y enviado por email correctamente",
-        });
-      } else {
-        throw new Error('Error generating PDF');
-      }
+ if (!response.ok) throw new Error('Error generating PDF');
+     const arrayBuffer = await response.arrayBuffer();
+    const blob = new Blob([arrayBuffer], { type: 'application/pdf' });
+
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `entrega_activos_${selectedUser.name}_${new Date().toISOString().split('T')[0]}.pdf`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+    
+     toast({
+      title: "PDF generado",
+      description: "El PDF ha sido generado y enviado por email correctamente",
+    });
     } catch (error) {
       console.error('Error generating PDF:', error);
       toast({
@@ -171,11 +186,17 @@ const TechnicianSignatureWizard = ({ onLogout }: TechnicianSignatureWizardProps)
           </div>
 
           {selectedTechnician && (
-            <TechnicianSignature
+           /* <TechnicianSignature
               technician={selectedTechnician}
               existingSignature={technicianSignature}
               onSignatureSave={handleTechnicianSignatureSave}
-            />
+            />*/
+           <TechnicianSignature
+              technician={selectedTechnician}
+               existingSignature={selectedTechnician?.signature_base64} // <--- Usa esta clave
+              onSignatureSave={handleTechnicianSignatureSave}
+              />
+
           )}
         </CardContent>
       </Card>

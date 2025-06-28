@@ -1,7 +1,5 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Users, Monitor } from 'lucide-react';
 
@@ -11,38 +9,54 @@ interface UserAssetsSelectionProps {
 }
 
 const UserAssetsSelection = ({ onUserSelect, onAssetsChange }: UserAssetsSelectionProps) => {
-  const [users, setUsers] = useState<any[]>([]);
+  const [userOptions, setUserOptions] = useState<any[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [assets, setAssets] = useState<any[]>([]);
-  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   const [isLoadingAssets, setIsLoadingAssets] = useState(false);
 
   useEffect(() => {
-    loadUsers();
-  }, []);
+    const delayDebounce = setTimeout(() => {
+      if (searchTerm.length > 2) {
+        fetchFilteredUsers(searchTerm);
+      } else {
+        setUserOptions([]);
+      }
+    }, 300);
 
-  const loadUsers = async () => {
-    setIsLoadingUsers(true);
-    try {
-      const response = await fetch('/api/glpi/users');
-      const data = await response.json();
-      setUsers(data);
-    } catch (error) {
-      console.error('Error loading users:', error);
-    } finally {
-      setIsLoadingUsers(false);
-    }
+    return () => clearTimeout(delayDebounce);
+  }, [searchTerm]);
+
+  const fetchFilteredUsers = async (query: string) => {
+    const token = localStorage.getItem('auth_token');
+
+    const response = await fetch(`http://localhost:3001/api/glpi/users?q=${encodeURIComponent(query)}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    const data = await response.json();
+    setUserOptions(data);
   };
 
-  const handleUserSelect = async (userId: string) => {
-    const user = users.find(u => u.id === parseInt(userId));
+  const handleUserSelect = async (user: any) => {
     setSelectedUser(user);
+    setSearchTerm(user.name);
+    setUserOptions([]);
     onUserSelect(user);
 
     if (user) {
       setIsLoadingAssets(true);
       try {
-        const response = await fetch(`/api/glpi/user-assets/${user.id}`);
+        const token = localStorage.getItem('auth_token');
+        const response = await fetch(`/api/glpi/user-assets/${user.id}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
         const data = await response.json();
         setAssets(data);
         onAssetsChange(data);
@@ -63,21 +77,34 @@ const UserAssetsSelection = ({ onUserSelect, onAssetsChange }: UserAssetsSelecti
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* User Selection */}
+        {/* User Search Input */}
         <div>
-          <label className="block text-sm font-medium mb-2">Seleccionar Usuario</label>
-          <Select onValueChange={handleUserSelect} disabled={isLoadingUsers}>
-            <SelectTrigger>
-              <SelectValue placeholder={isLoadingUsers ? "Cargando usuarios..." : "Elige un usuario"} />
-            </SelectTrigger>
-            <SelectContent>
-              {users.map((user) => (
-                <SelectItem key={user.id} value={user.id.toString()}>
-                  {user.name} - {user.email}
-                </SelectItem>
+          <label className="block text-sm font-medium mb-2">Buscar Usuario</label>
+          <input
+            type="text"
+            placeholder="Escribe el nombre del usuario..."
+            className="w-full p-2 border rounded"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+
+          {userOptions.length > 0 && (
+            <ul className="border rounded mt-1 max-h-40 overflow-y-auto">
+              {userOptions.map((user) => (
+                <li
+                  key={user.id}
+                  className="p-2 hover:bg-gray-100 cursor-pointer"
+                  onClick={() => handleUserSelect(user)}
+                >
+                  <div>{user.name}</div>
+                  <div className="text-xs text-gray-500">{user.email}</div>
+                  {user.code && (
+                  <div className="text-xs text-blue-500">Código: {user.code}</div>
+            )}
+                </li>
               ))}
-            </SelectContent>
-          </Select>
+            </ul>
+          )}
         </div>
 
         {/* Assets Table */}
@@ -87,7 +114,7 @@ const UserAssetsSelection = ({ onUserSelect, onAssetsChange }: UserAssetsSelecti
               <Monitor className="w-5 h-5 text-blue-600" />
               <h3 className="text-lg font-semibold">Activos Asignados</h3>
             </div>
-            
+
             {isLoadingAssets ? (
               <div className="flex justify-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -113,7 +140,9 @@ const UserAssetsSelection = ({ onUserSelect, onAssetsChange }: UserAssetsSelecti
                         <TableCell>{asset.type}</TableCell>
                         <TableCell>
                           <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                            asset.states_id === 1 ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                            asset.states_id === 1
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-yellow-100 text-yellow-800'
                           }`}>
                             {asset.state}
                           </span>
