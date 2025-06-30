@@ -19,7 +19,7 @@ interface Technician {
   id: number;
   name: string;
   email: string;
-  signature?: string;
+  signature_base64: string | null;
 }
 
 const TechnicianSignatureWizard = ({ onLogout }: TechnicianSignatureWizardProps) => {
@@ -37,7 +37,7 @@ useEffect(() => {
 
   const fetchTechnicians = async () => {
     try {
-      const response = await fetch('http://localhost:3001/api/technicians', {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/technicians`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -63,8 +63,8 @@ useEffect(() => {
   const handleTechnicianSelect = (technicianId: string) => {
     const technician = technicians.find(t => t.id === parseInt(technicianId));
     setSelectedTechnician(technician || null);
-    if (technician?.signature) {
-      setTechnicianSignature(technician.signature);
+    if (technician?.signature_base64) {
+      setTechnicianSignature(technician.signature_base64);
     }
   };
 
@@ -107,7 +107,7 @@ useEffect(() => {
     try {
      const token = localStorage.getItem('auth_token');
 
-const response = await fetch('http://localhost:3001/api/generate-pdf', {
+const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/generate-pdf`, {
   method: 'POST',
   mode: 'cors',
   headers: {

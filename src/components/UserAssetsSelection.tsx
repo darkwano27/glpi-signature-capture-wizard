@@ -30,7 +30,7 @@ const UserAssetsSelection = ({ onUserSelect, onAssetsChange }: UserAssetsSelecti
   const fetchFilteredUsers = async (query: string) => {
     const token = localStorage.getItem('auth_token');
 
-    const response = await fetch(`http://localhost:3001/api/glpi/users?q=${encodeURIComponent(query)}`, {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/glpi/users?q=${encodeURIComponent(query)}`, {
       headers: {
         'Authorization': `Bearer ${token}`,
       },

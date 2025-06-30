@@ -1,4 +1,3 @@
-
 const puppeteer = require('puppeteer');
 const { localDb } = require('../config/db');
 const mailService = require('../services/mailService');
@@ -348,7 +347,7 @@ exports.generatePdf = async (req, res) => {
             <div class="signature-text">
                 EL TRABAJADOR, deberá informar de manera inmediata cualquier desperfecto o daño que suficieren o bien entregado, con la finalidad de ser alertado a la brevedad posible. Por ningún motivo deberá hacerlo por cuenta propia.
                 <br><br>
-                EL TRABAJADOR, manifiesta que firma a fin de ser buenas condiciones, comprometiéndose a cargo pago de él si cumplimiento de sus funciones o de responsabilidad por todos los actos que pudieran devenir o resultar por la custodia y uso de los bienes que se le otorgan. Comprometiéndose asimismo a devolverlos cuando se le requieran, en las mismas condiciones en que los recibió, salvo el deterioro por el uso normal de los mismos. Si el trabajador fuere separado del centro de labores se obliga a entregar todos los bienes bajo su responsabilidad, caso de "NO HACERLO".
+                EL TRABAJador, manifiesta que firma a fin de ser buenas condiciones, comprometiéndose a cargo pago de él si cumplimiento de sus funciones o de responsabilidad por todos los actos que pudieran devenir o resultar por la custodia y uso de los bienes que se le otorgan. Comprometiéndose asimismo a devolverlos cuando se le requieran, en las mismas condiciones en que los recibió, salvo el deterioro por el uso normal de los mismos. Si el trabajador fuere separado del centro de labores se obliga a entregar todos los bienes bajo su responsabilidad, caso de "NO HACERLO".
             </div>
             
             <div class="signature-boxes">
